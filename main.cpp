@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <wiringPi.h>
 #include "motor.h"
+#include "rangesensor.h"
 #include <iostream>
 
 #define D_STOP 0
@@ -39,36 +40,41 @@ void drive(Motor *m1, Motor *m2, int direction){
   }
 }
 
+void demo(Motor *ml, Motor* mr){
+     delay(3000);
+     std::cout << "FW" << std::endl;
+     drive(ml, mr, D_FORWARD);
+
+     delay(3000);
+     std::cout << "RE" << std::endl;
+     drive(ml, mr, D_REVERSE);
+
+     delay(3000);
+     std::cout << "L" << std::endl;
+     drive(ml, mr, D_LEFT);
+
+     delay(3000);
+     std::cout << "HL" << std::endl;
+     drive(ml, mr, D_HLEFT);
+
+     delay(3000);
+     std::cout << "R" << std::endl;
+     drive(ml, mr, D_RIGHT);
+
+     delay(3000);
+     std::cout << "HR" << std::endl;
+     drive(ml, mr, D_HRIGHT);
+
+     delay(3000);
+     drive(ml, mr, D_STOP);
+}
+
 int main(){
         wiringPiSetup();
-        Motor *ml=new Motor(9, 8);
-        Motor *mr=new Motor(0, 7);
-	
-	  delay(3000);
-          std::cout << "FW" << std::endl;
-	  drive(ml, mr, D_FORWARD);
-
-	  delay(3000);
-          std::cout << "RE" << std::endl;
-	  drive(ml, mr, D_REVERSE);
-
-	  delay(3000);
-          std::cout << "L" << std::endl;
-          drive(ml, mr, D_LEFT);
-
-	  delay(3000);
-          std::cout << "HL" << std::endl;
-          drive(ml, mr, D_HLEFT);
-
-	  delay(3000);
-          std::cout << "R" << std::endl;
-          drive(ml, mr, D_RIGHT);
-
-	  delay(3000);
-          std::cout << "HR" << std::endl;
-          drive(ml, mr, D_HRIGHT);
-
-	  delay(3000);
-          drive(ml, mr, D_STOP);
+        //Motor *ml=new Motor(9, 8);
+        //Motor *mr=new Motor(0, 7);
+        RangeSensor *rs = new RangeSensor(15, 16);
+        std::cout << rs->measure() << std::endl;
+        //demo(ml, mr);
 	return 0;
 }
