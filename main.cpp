@@ -77,6 +77,7 @@ int main(){
      noecho();
      raw();
 
+     srand(time(0)); //I tried NULL as well
      wiringPiSetup();
 
      Motor *ml=new Motor(9, 8);
@@ -88,8 +89,10 @@ int main(){
 
        if ( rs->measure() > 10) 
          drive(ml, mr, D_FORWARD);
-       else 
-         drive(ml, mr, D_HRIGHT);
+       else{ 
+         (rand()%2 == 0)?drive(ml, mr, D_HRIGHT):drive(ml, mr, D_HLEFT);
+         delay(500);
+       }
 
        delay(100);
      }
