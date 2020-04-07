@@ -10,11 +10,11 @@ class Motor {
     void forward();
     void reverse();
     void stop();
+    virtual ~Motor();
 
   private:
     int p1;
     int p2;
-    virtual ~Motor();
 };
 
 #endif

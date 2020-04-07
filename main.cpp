@@ -94,10 +94,15 @@ int main(){
          delay(500);
        }
 
-       delay(100);
+       delay(10);
      }
      //Restore stdin to its normal blocking operation before we leave.
      endwin();
      drive(ml, mr, D_STOP);
+  
+     delete rs;
+     delete mr;
+     delete ml;
+     
      return 0;
 }

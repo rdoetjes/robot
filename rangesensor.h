@@ -9,11 +9,11 @@ class RangeSensor {
   public:
     RangeSensor(int pTrig, int pEcho);
     float measure();
+    virtual ~RangeSensor();
 
   private:
     int pTrig;
     int pEcho;
-    virtual ~RangeSensor();
 
 };
 
