@@ -3,6 +3,8 @@
 #include "motor.h"
 #include "rangesensor.h"
 #include <iostream>
+#include <future>
+#include <thread>
 
 #define D_STOP 0
 #define D_FORWARD 1
@@ -70,11 +72,19 @@ void demo(Motor *ml, Motor* mr){
 }
 
 int main(){
-        wiringPiSetup();
-        //Motor *ml=new Motor(9, 8);
-        //Motor *mr=new Motor(0, 7);
-        RangeSensor *rs = new RangeSensor(15, 16);
-        std::cout << rs->measure() << std::endl;
-        //demo(ml, mr);
-	return 0;
+     wiringPiSetup();
+     Motor *ml=new Motor(9, 8);
+     Motor *mr=new Motor(0, 7);
+
+     RangeSensor *rs = new RangeSensor(15, 16);
+     while(1) {
+       if ( rs->measure() > 10) 
+         drive(ml, mr, D_STOP);
+       else 
+         drive(ml, mr, D_STOP);
+
+       delay(100);
+     }
+     //demo(ml, mr);
+     return 0;
 }
