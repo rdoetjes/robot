@@ -3,8 +3,7 @@
 #include "motor.h"
 #include "rangesensor.h"
 #include <iostream>
-#include <future>
-#include <thread>
+#include <ncurses.h>
 
 #define D_STOP 0
 #define D_FORWARD 1
@@ -72,19 +71,30 @@ void demo(Motor *ml, Motor* mr){
 }
 
 int main(){
+     //Set stdin to non-blocking, no echo.
+     initscr();
+     nodelay(stdscr, true);
+     noecho();
+     raw();
+
      wiringPiSetup();
+
      Motor *ml=new Motor(9, 8);
      Motor *mr=new Motor(0, 7);
-
      RangeSensor *rs = new RangeSensor(15, 16);
+
      while(1) {
+       if ( getch() == 'q') break;
+
        if ( rs->measure() > 10) 
-         drive(ml, mr, D_STOP);
+         drive(ml, mr, D_FORWARD);
        else 
-         drive(ml, mr, D_STOP);
+         drive(ml, mr, D_HRIGHT);
 
        delay(100);
      }
-     //demo(ml, mr);
+     //Restore stdin to its normal blocking operation before we leave.
+     endwin();
+     drive(ml, mr, D_STOP);
      return 0;
 }
