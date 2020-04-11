@@ -13,84 +13,84 @@
 #define D_RIGHT 4
 #define D_HLEFT 5
 #define D_HRIGHT 6
-#define CRUISE_SPEED 70
+#define CRUISE_SPEED 100
 
-unsigned int micros_next_move = 0;
+struct driveMotors{
+  Motor *mr;
+  Motor *ml;
+  int direction;
+  int pwm1;
+  int pwm2;
+  int msContinuous;
+  unsigned int micros_next_move;
+};
 
-void drive(Motor *m1, Motor *m2, int direction, int pwm1, int pwm2, int msContinuousDrive){
-  if (m1==NULL || m2==NULL)
+void drive(driveMotors *d){
+  if (d->mr==NULL || d->ml==NULL)
     return;
 
   //we instructed the motor to drive msContinuousDrive uninterrupted, we do handle a stop 
-  if ( micros() < micros_next_move && direction != D_STOP)
+  if ( micros() < d->micros_next_move && d->direction != D_STOP)
     return;
 
 
-  switch(direction) {
+  switch(d->direction) {
     case D_STOP:
-     m1->stop(); m2->stop(); mvprintw(1,2, "MOVE: STOP"); break;
+      d->mr->stop(); d->ml->stop(); mvprintw(1,2, "MOVE: STOP"); break;
 
     case D_FORWARD:
-      m1->forward(pwm1); m2->forward(pwm2); mvprintw(1,2, "MOVE: FORWARD"); break;
+      d->mr->forward(d->pwm1); d->ml->forward(d->pwm2); mvprintw(1,2, "MOVE: FORWARD"); break;
 
     case D_REVERSE:
-      m1->reverse(pwm1); m2->reverse(pwm2); mvprintw(1,2, "MOVE: REVERSE"); break;
+      d->mr->reverse(d->pwm1); d->ml->reverse(d->pwm2); mvprintw(1,2, "MOVE: REVERSE"); break;
 
     case D_LEFT:
-      m1->stop(); m2->forward(pwm2);        mvprintw(1,2, "MOVE: LEFT   "); break;
+      d->mr->stop(); d->ml->forward(d->pwm2);        mvprintw(1,2, "MOVE: LEFT   "); break;
 
     case D_HLEFT:
-      m1->reverse(pwm1); m2->forward(pwm2); mvprintw(1,2, "MOVE: H_LEFT "); break;
+       d->mr->reverse(d->pwm1); d->ml->forward(d->pwm2); mvprintw(1,2, "MOVE: H_LEFT "); break;
 
     case D_RIGHT:
-      m1->forward(pwm1); m2->stop();        mvprintw(1,2, "MOVE: RIGHT  "); break;
+      d->mr->forward(d->pwm1); d->ml->stop();        mvprintw(1,2, "MOVE: RIGHT  "); break;
 
     case D_HRIGHT:
-      m1->forward(pwm1); m2->reverse(pwm2); mvprintw(1,2, "MOVE: H_RIGHT"); break;
+      d->mr->forward(d->pwm1); d->ml->reverse(d->pwm2); mvprintw(1,2, "MOVE: H_RIGHT"); break;
   }
 
-  micros_next_move = micros() + (msContinuousDrive * 1000);
+  d->micros_next_move = micros() + (d->msContinuous * 1000);
 }
 
-void demo(Motor *ml, Motor* mr, int runSec){
-   mvprintw(0,0, "DEMO MOTOR: ");
-
-   delay(runSec * 1000);
-   drive(ml, mr, D_FORWARD, 100, 100, 0);
-
-   delay(runSec * 1000);
-   drive(ml, mr, D_REVERSE, 100, 100, 0);
-
-   delay(runSec * 1000);
-   drive(ml, mr, D_LEFT, 100, 100, 0);
-
-   delay(runSec * 1000);
-   drive(ml, mr, D_HLEFT, 100, 100, 0);
-
-   delay(runSec * 1000);
-   drive(ml, mr, D_RIGHT, 100, 100, 0);
-
-   delay(runSec * 1000);
-   drive(ml, mr, D_HRIGHT, 100, 100, 0);
-
-   delay(runSec * 1000);
-   drive(ml, mr, D_STOP, 100, 100, 0);
-}
-
-void move(Motor *ml, Motor *mr, RangeSensor *rs) {
+void moveRobot(driveMotors *d, RangeSensor *rs) {
   float range;
 
   range = rs->measure();
-  mvprintw(2,2, "RANGE: %.2f cm", range);
+  mvprintw(2,2, "RANGE: %.2f cm    ", range);
 
-  if ( range > 30)
-     drive(ml, mr, D_FORWARD, CRUISE_SPEED, CRUISE_SPEED, 0);
-  else if(range <30 && range >15) {
-     (rand()%2 == 0)?drive(ml, mr, D_HRIGHT, CRUISE_SPEED, CRUISE_SPEED, 800):drive(ml, mr, D_HLEFT, CRUISE_SPEED, CRUISE_SPEED, 800);
+  if ( range > 30){
+     d->direction = D_FORWARD;
+     d->pwm1 = d->pwm2 = CRUISE_SPEED;
+     d->msContinuous = 0;
+     drive(d);
   }
+  else if(range <30 && range >15) {
+     if (rand()%2 == 0){ 
+       d->pwm1 = d->pwm2 = 80;
+       d->msContinuous = 800;
+       d->direction = D_HLEFT;
+       drive(d);
+     }
+     else {
+       d->pwm1 = d->pwm2 = 80;
+       d->msContinuous = 800;
+       d->direction = D_HRIGHT;
+       drive(d);
+     }
+  }  
   else{
-    drive(ml, mr, D_REVERSE, 100, 100, 500);
-    (rand()%2 == 0)?drive(ml, mr, D_HRIGHT, 50, 50, 800):drive(ml, mr, D_HLEFT, 50, 50, 800);
+    d->direction = D_REVERSE;
+    d->pwm1 = d->pwm2 = CRUISE_SPEED;
+    d->msContinuous = 500;
+    drive(d);
   }
 }
 
@@ -109,27 +109,39 @@ int main(){
      RangeSensor *rs = new RangeSensor(7, 0);
      int key;
 
+     driveMotors *d=new driveMotors;
+     d->mr=mr;
+     d->ml=ml;
+     d->pwm1=d->pwm2=CRUISE_SPEED;
+     d->direction = D_FORWARD;
+     d->msContinuous = 0;
+     d->micros_next_move = 0;
+
      mvprintw(0, 40, "ROBOT v0.1");
      while(1) {
        //stop robot when q is pressedÂ
        key = getch();
        if ( key == 'q' ) break;
-       if ( key == 'd' ) demo(ml, mr, 2);
 
-       //move the robot
-       move(ml, mr, rs);
+       //move the robot use cruise speed as a hard default, just in case
+       d->pwm1=d->pwm2=CRUISE_SPEED;
+       moveRobot(d, rs);
 
        delay(5);
      }
 
      //Restore stdin to its normal blocking operation before we leave.
      endwin();
-     drive(ml, mr, D_STOP, 0, 0, 0);
+     d->direction = D_STOP;
+     d->msContinuous = 0;
+     d->pwm1 = d->pwm2 = 0;
+     drive(d);
   
      //destruct objects
      delete rs;
      delete mr;
      delete ml;
+     free(d);
      
      return 0;
 }
