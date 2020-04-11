@@ -128,8 +128,8 @@ void moveRobot(driveMotors *d, RangeSensor *rs) {
 
   //do something completely arbitrary ever 1000th iteration
   if (iteration % 100 == 0){
-    int nd = rand()%(6-1 + 1) + 1;
-    while (nd == d->direction || nd == D_STOP) { nd = rand()%(6-1 + 1) + 1; }
+    int nd = (rand() % 6 + 1);
+    while (nd == d->direction || nd == D_STOP) { nd = (rand() % 6 + 1); }
     d->direction = nd;
     d->pwm1 = d->pwm2 = CRUISE_SPEED;
     d->msContinuous = rand()%(1200-600 + 1) + 600;
