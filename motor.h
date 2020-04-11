@@ -1,5 +1,5 @@
 /*
- Motor class
+ Motor class (Raymond Doetjes 2020)
  This is a lowlevel class to drive individual motors.
  This class tends to be wrapped in a function or a more highlevel class
  

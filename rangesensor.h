@@ -1,5 +1,5 @@
 /*
- RangeSensor class
+ RangeSensor class (Raymond Doetjes 2020)
  Implements the low lever workings of an HC-SR04.
  It uses the WiringPi library, check that for more details.
 
