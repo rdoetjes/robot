@@ -71,8 +71,28 @@ void demo(Motor *ml, Motor* mr){
      drive(ml, mr, D_STOP, 100, 100);
 }
 
+void move(Motor *ml, Motor *mr, RangeSensor *rs) {
+  float range;
+
+  range = rs->measure();
+
+  if ( range > 30)
+     drive(ml, mr, D_FORWARD, CRUISE_SPEED, CRUISE_SPEED);
+  else if(range <30 && range >15) {
+     (rand()%2 == 0)?drive(ml, mr, D_HRIGHT, CRUISE_SPEED, CRUISE_SPEED):drive(ml, mr, D_HLEFT, CRUISE_SPEED, CRUISE_SPEED);
+     delay(600);
+  }
+  else{
+    drive(ml, mr, D_REVERSE, 100, 100);
+    delay(500);
+    (rand()%2 == 0)?drive(ml, mr, D_HRIGHT, 50, 50):drive(ml, mr, D_HLEFT, 50, 50);
+    delay(800);
+  }
+}
+
+
 int main(){
-     float range = 0;
+ 
      //Set stdin to non-blocking, no echo.
      initscr();
      nodelay(stdscr, true);
@@ -86,22 +106,10 @@ int main(){
      RangeSensor *rs = new RangeSensor(7, 0);
  
      while(1) {
+       //stop robot when q is pressedÂ
        if ( getch() == 'q') break;
-
-       range = rs->measure();
-       //std::cout << range << std::endl;
-       if ( range > 30) 
-         drive(ml, mr, D_FORWARD, CRUISE_SPEED, CRUISE_SPEED);
-       else if(range <30 && range >15) {
-         (rand()%2 == 0)?drive(ml, mr, D_HRIGHT, CRUISE_SPEED, CRUISE_SPEED):drive(ml, mr, D_HLEFT, CRUISE_SPEED, CRUISE_SPEED);
-         delay(600);
-       }
-       else{ 
-         drive(ml, mr, D_REVERSE, 100, 100);
-         delay(500);
-         (rand()%2 == 0)?drive(ml, mr, D_HRIGHT, 50, 50):drive(ml, mr, D_HLEFT, 50, 50);
-	 delay(800);
-       }
+       //move the robot
+       move(ml, mr, rs);
      }
      //Restore stdin to its normal blocking operation before we leave.
      endwin();
