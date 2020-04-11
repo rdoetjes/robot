@@ -26,6 +26,8 @@ struct driveMotors{
   unsigned int micros_next_move;
 };
 
+unsigned int iteration;
+
 /*
 We want to measure distance, only every so often, this global variable
 allows us to track when to measure again, without blocking the process
@@ -92,7 +94,7 @@ void moveRobot(driveMotors *d, RangeSensor *rs) {
     return;
 
   mvprintw(2,2, "RANGE: %.2f cm    ", range);
-
+  //The random factors make this fuzzy (non intelligent but still less likely to get stuck
   if ( range > 30){
      d->direction = D_FORWARD;
      d->pwm1 = d->pwm2 = CRUISE_SPEED;
@@ -102,13 +104,13 @@ void moveRobot(driveMotors *d, RangeSensor *rs) {
   else if(range <30 && range >15) {
      if (rand()%2 == 0){ 
        d->pwm1 = d->pwm2 = 80;
-       d->msContinuous = rand()%(1200-600 + 1) + 600;
+       d->msContinuous = rand()%(1200-200 + 1) + 600;
        d->direction = D_HLEFT;
        drive(d);
      }
      else {
        d->pwm1 = d->pwm2 = 80;
-       d->msContinuous = rand()%(1200-600 + 1) + 600;
+       d->msContinuous = rand()%(1200-200 + 1) + 600;
        d->direction = D_HRIGHT;
        drive(d);
      }
@@ -119,11 +121,24 @@ void moveRobot(driveMotors *d, RangeSensor *rs) {
     d->msContinuous = rand()%(1200-600 + 1) + 600;
     drive(d);
   }
+
   micros_next_measure = micros() + (100*1000);
+  iteration ++;
+  mvprintw(3, 2, "ITERATION: %d",iteration);
+
+  //do something completely arbitrary ever 1000th iteration
+  if (iteration % 100 == 0){
+    int nd = rand()%(6-1 + 1) + 1;
+    while (nd == d->direction || nd == D_STOP) { nd = rand()%(6-1 + 1) + 1; }
+    d->direction = nd;
+    d->pwm1 = d->pwm2 = CRUISE_SPEED;
+    d->msContinuous = rand()%(1200-600 + 1) + 600;
+    drive(d);
+  }
 }
 
 int main(){
- 
+     iteration = 0;
      //Set stdin to non-blocking, no echo to read keyboard 
      initscr();
      nodelay(stdscr, true);
