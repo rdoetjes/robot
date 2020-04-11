@@ -13,7 +13,7 @@
 #define D_RIGHT 4
 #define D_HLEFT 5
 #define D_HRIGHT 6
-#define CRUISE_SPEED 90
+#define CRUISE_SPEED 1000
 
 //convenience structure, used by drive function
 struct driveMotors{
@@ -96,19 +96,19 @@ void moveRobot(driveMotors *d, RangeSensor *rs) {
   if ( range > 30){
      d->direction = D_FORWARD;
      d->pwm1 = d->pwm2 = CRUISE_SPEED;
-     d->msContinuous = 100;
+     d->msContinuous = 0;
      drive(d);
   }
   else if(range <30 && range >15) {
      if (rand()%2 == 0){ 
        d->pwm1 = d->pwm2 = 80;
-       d->msContinuous = 800;
+       d->msContinuous = rand()%(1200-600 + 1) + 600;
        d->direction = D_HLEFT;
        drive(d);
      }
      else {
        d->pwm1 = d->pwm2 = 80;
-       d->msContinuous = 800;
+       d->msContinuous = rand()%(1200-600 + 1) + 600;
        d->direction = D_HRIGHT;
        drive(d);
      }
@@ -116,7 +116,7 @@ void moveRobot(driveMotors *d, RangeSensor *rs) {
   else{
     d->direction = D_REVERSE;
     d->pwm1 = d->pwm2 = CRUISE_SPEED;
-    d->msContinuous = 800;
+    d->msContinuous = rand()%(1200-600 + 1) + 600;
     drive(d);
   }
   micros_next_measure = micros() + (100*1000);
