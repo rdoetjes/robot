@@ -9,10 +9,10 @@
 #define D_STOP 0
 #define D_FORWARD 1
 #define D_REVERSE 2
-#define D_LEFT 3
-#define D_RIGHT 4
-#define D_HLEFT 5
-#define D_HRIGHT 6
+#define D_HLEFT 3
+#define D_HRIGHT 4
+#define D_LEFT 5
+#define D_RIGHT 6
 #define CRUISE_SPEED 1000
 
 //convenience structure, used by drive function
@@ -128,11 +128,12 @@ void moveRobot(driveMotors *d, RangeSensor *rs) {
 
   //do something completely arbitrary ever 1000th iteration
   if (iteration % 100 == 0){
-    int nd = (rand() % 6 + 1);
-    while (nd == d->direction || nd == D_STOP) { nd = (rand() % 6 + 1); }
+    int nd = (rand() % 4 + 1);
+    while (nd == d->direction || nd == D_STOP) { nd = (rand() % 4 + 1); }
     d->direction = nd;
     d->pwm1 = d->pwm2 = CRUISE_SPEED;
-    d->msContinuous = rand()%(1200-600 + 1) + 600;
+    d->msContinuous = rand()%(1200-800 + 1) + 800;
+    mvprintw(4, 2, "LAST FUZZY MOVE: %d", nd);
     drive(d);
   }
 }
@@ -172,7 +173,6 @@ int main(){
 
        //move the robot use cruise speed as a hard default, just in case
        d->pwm1=d->pwm2=CRUISE_SPEED; //cruise speed is a bit lower than the 100% duty cycle
-
        moveRobot(d, rs); //perform the basic measure and move actions
 
        delay(5); //safe CPU cycles, because measuring and moving isn't all that fast anyways

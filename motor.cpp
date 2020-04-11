@@ -33,8 +33,6 @@ Motor::Motor(int p1, int p2){
   this->p2 = p2;
   pinMode(p1, OUTPUT);
   pinMode(p2, OUTPUT);
-  digitalWrite(p1, LOW);
-  digitalWrite(p2, LOW);
   //softPwmCreate (p1, 0, 5000);
   //softPwmCreate (p2, 0, 5000);
 }
