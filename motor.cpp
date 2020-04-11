@@ -47,9 +47,8 @@ void Motor::forward(int pwm){
 }
 
 void Motor::reverse(int pwm){
-   pwm=pwm;
-   //softPwmWrite (p1, pwm);
-   //softPwmWrite (p2, pwm);
+   softPwmWrite (p1, pwm);
+   softPwmWrite (p2, pwm);
    digitalWrite(p1, LOW);
    digitalWrite(p2, HIGH);
 }
