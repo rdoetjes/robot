@@ -7,7 +7,7 @@
     VCC on HBridge to 5V line on dedicated battery
     GND on HBridge to GND shared with GND on Pi
     A-1A is connected to an arbitrary GPIO
-    A-@A is connected to an arbitrary GPIO
+    A-2A is connected to an arbitrary GPIO
 
  Constructor takes the GPIO number for p1 (gpio A-1A) and p2 (gpio A-@A)
  Bare in mind, that you can swap these numbers, when the motor turns backwards
