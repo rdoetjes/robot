@@ -13,8 +13,9 @@
 #define D_RIGHT 4
 #define D_HLEFT 5
 #define D_HRIGHT 6
-#define CRUISE_SPEED 100
+#define CRUISE_SPEED 90
 
+//convenience structure, used by drive function
 struct driveMotors{
   Motor *mr;
   Motor *ml;
@@ -25,6 +26,16 @@ struct driveMotors{
   unsigned int micros_next_move;
 };
 
+/*
+We want to measure distance, only every so often, this global variable
+allows us to track when to measure again, without blocking the process
+*/
+unsigned int micros_next_measure = 0;
+
+/*
+drive method takes a driveMotors pointer.
+This pointer contains the instructions for the motors, which are instances of the Motor class
+*/
 void drive(driveMotors *d){
   if (d->mr==NULL || d->ml==NULL)
     return;
@@ -32,7 +43,6 @@ void drive(driveMotors *d){
   //we instructed the motor to drive msContinuousDrive uninterrupted, we do handle a stop 
   if ( micros() < d->micros_next_move && d->direction != D_STOP)
     return;
-
 
   switch(d->direction) {
     case D_STOP:
@@ -60,16 +70,33 @@ void drive(driveMotors *d){
   d->micros_next_move = micros() + (d->msContinuous * 1000);
 }
 
+/*
+moveRobot takes a driveMotors instance, and Range~Sensor instancve
+It will perform a range meeasurement every 100ms, because the bit banging required is CPU intensive
+Based on the distance:
+   -the robot will move forward if the obstance is further than 30cm away
+   -the robot will randomly do a hard left or hard right when when distance between 30 and 15cm
+   it will do this for 800ms (non-blocking)
+   -the roboot will reverse for a duration of 800ms wqhewn the distance is smaller than 15cm
+ 
+   The random left or right is a fuzzy component that should help getting the robot out of tight spots
+*/
 void moveRobot(driveMotors *d, RangeSensor *rs) {
   float range;
 
+  if (micros() < micros_next_measure) 
+    return;
+
   range = rs->measure();
+  if (range == -1)
+    return;
+
   mvprintw(2,2, "RANGE: %.2f cm    ", range);
 
   if ( range > 30){
      d->direction = D_FORWARD;
      d->pwm1 = d->pwm2 = CRUISE_SPEED;
-     d->msContinuous = 0;
+     d->msContinuous = 100;
      drive(d);
   }
   else if(range <30 && range >15) {
@@ -89,25 +116,30 @@ void moveRobot(driveMotors *d, RangeSensor *rs) {
   else{
     d->direction = D_REVERSE;
     d->pwm1 = d->pwm2 = CRUISE_SPEED;
-    d->msContinuous = 500;
+    d->msContinuous = 800;
     drive(d);
   }
+  micros_next_measure = micros() + (100*1000);
 }
 
 int main(){
  
-     //Set stdin to non-blocking, no echo.
+     //Set stdin to non-blocking, no echo to read keyboard 
      initscr();
      nodelay(stdscr, true);
      noecho();
      raw();
 
      srand(time(0)); //I tried NULL as well
-     wiringPiSetup();
-     Motor *ml=new Motor(9, 8);
-     Motor *mr=new Motor(16, 15);
-     RangeSensor *rs = new RangeSensor(7, 0);
-     int key;
+     wiringPiSetup(); //We use the wiringPi GPIO method (read their documentation)
+
+     Motor *ml=new Motor(9, 8); //left motor is connected to WiringPi-GPIO 9 and 8
+
+     Motor *mr=new Motor(16, 15); //right motor is connected to WiringPi-GPIO 16 and 15
+
+     RangeSensor *rs = new RangeSensor(7, 0); //range finder trigeer is connected to WiringPI-GPIO 7 and echo to 0
+     
+     int key; //key holds the ASCII number of the chracter pressed on the keyboard
 
      driveMotors *d=new driveMotors;
      d->mr=mr;
@@ -124,14 +156,17 @@ int main(){
        if ( key == 'q' ) break;
 
        //move the robot use cruise speed as a hard default, just in case
-       d->pwm1=d->pwm2=CRUISE_SPEED;
-       moveRobot(d, rs);
+       d->pwm1=d->pwm2=CRUISE_SPEED; //cruise speed is a bit lower than the 100% duty cycle
 
-       delay(5);
+       moveRobot(d, rs); //perform the basic measure and move actions
+
+       delay(5); //safe CPU cycles, because measuring and moving isn't all that fast anyways
      }
 
      //Restore stdin to its normal blocking operation before we leave.
      endwin();
+
+     //stop the motors
      d->direction = D_STOP;
      d->msContinuous = 0;
      d->pwm1 = d->pwm2 = 0;
