@@ -1,3 +1,5 @@
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 #include <stddef.h>
 #include <wiringPi.h>
 #include "motor.h"
@@ -14,6 +16,8 @@
 #define D_LEFT 5
 #define D_RIGHT 6
 #define CRUISE_SPEED 1000
+
+using namespace cv;
 
 //convenience structure, used by drive function
 struct driveMotors{
@@ -139,6 +143,13 @@ void moveRobot(driveMotors *d, RangeSensor *rs) {
 }
 
 int main(){
+     VideoCapture cap;
+    // open the default camera, use something different from 0 otherwise;
+    // Check VideoCapture documentation.
+
+    if(!cap.open(0))
+        return 0;
+
      iteration = 0;
      //Set stdin to non-blocking, no echo to read keyboard 
      initscr();
@@ -167,6 +178,12 @@ int main(){
 
      mvprintw(0, 40, "ROBOT v0.1");
      while(1) {
+
+      Mat frame;
+      cap >> frame;
+      if( frame.empty() ) break; // end of video stream
+        imshow("this is you, smile! :)", frame);
+
        //stop robot when q is pressedÂ
        key = getch();
        if ( key == 'q' ) break;

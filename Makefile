@@ -5,7 +5,7 @@ BUILD    := ./build
 OBJ_DIR  := $(BUILD)/objects
 APP_DIR  := $(BUILD)/apps
 TARGET   := robot
-INCLUDE  := -Iinclude/
+INCLUDE  := -Iinclude/ -I/usr/include/opencv4/
 SRC      := $(wildcard *.cpp)         \
 
 OBJECTS  := $(SRC:%.cpp=$(OBJ_DIR)/%.o)

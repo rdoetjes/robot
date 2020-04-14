@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.5)
+project( robot )
+find_package( OpenCV REQUIRED )
+find_package(Curses REQUIRED)
+find_library(wiringPi_LIB wiringPi)
+include_directories(${CURSES_INCLUDE_DIR})
+add_executable(robot main.cpp motor.cpp rangesensor.cpp)
+target_link_libraries( robot ${OpenCV_LIBS} ${CURSES_LIBRARIES} ${wiringPi_LIB})
