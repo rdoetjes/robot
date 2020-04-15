@@ -7,6 +7,8 @@
 #include <iostream>
 #include <iomanip>
 #include <string.h> 
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #define D_STOP 0
 #define D_FORWARD 1
@@ -32,6 +34,29 @@ struct driveMotors{
 };
 
 unsigned int iteration;
+
+/******************************************************************************
+ * Checks to see if a directory exists. Note: This method only checks the
+ * existence of the full path AND if path leaf is a dir.
+ *
+ * @return  >0 if dir exists AND is a dir,
+ *           0 if dir does not exist OR exists but not a dir,
+ *          <0 if an error occurred (errno is also set)
+ *****************************************************************************/
+int dirExists(const char* const path)
+{
+    struct stat info;
+
+    int statRC = stat( path, &info );
+    if( statRC != 0 )
+    {
+        if (errno == ENOENT)  { return 0; } // something along the path does not exist
+        if (errno == ENOTDIR) { return 0; } // something in path prefix is not a dir
+        return -1;
+    }
+
+    return ( info.st_mode & S_IFDIR ) ? 1 : 0;
+}
 
 /*
 We want to measure distance, only every so often, this global variable
@@ -157,7 +182,15 @@ void moveRobot(driveMotors *d, RangeSensor *rs, Mat mat) {
   imshow("Camera", mat);
 }
 
+void createDir(){
+  if ( dirExists("./1/") == 0 ) mkdir ("./1", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  if ( dirExists("./2/") == 0 ) mkdir ("./2", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  if ( dirExists("./3/") == 0 ) mkdir ("./3", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+}
+
 int main(){
+     createDir();
+
      VideoCapture cap;
 
      int deviceID = 0;             // 0 = open default camera
