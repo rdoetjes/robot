@@ -5,7 +5,7 @@
 #include "motor.h"
 #include "rangesensor.h"
 #include <iostream>
-#include <ncurses.h>			/* ncurses.h includes stdio.h */  
+#include <iomanip>
 #include <string.h> 
 
 #define D_STOP 0
@@ -18,6 +18,7 @@
 #define CRUISE_SPEED 1000
 
 using namespace cv;
+using namespace std;
 
 //convenience structure, used by drive function
 struct driveMotors{
@@ -52,25 +53,25 @@ void drive(driveMotors *d){
 
   switch(d->direction) {
     case D_STOP:
-      d->mr->stop(); d->ml->stop(); mvprintw(1,2, "MOVE: STOP"); break;
+      d->mr->stop(); d->ml->stop(); 
 
     case D_FORWARD:
-      d->mr->forward(d->pwm1); d->ml->forward(d->pwm2); mvprintw(1,2, "MOVE: FORWARD"); break;
+      d->mr->forward(d->pwm1); d->ml->forward(d->pwm2); 
 
     case D_REVERSE:
-      d->mr->reverse(d->pwm1); d->ml->reverse(d->pwm2); mvprintw(1,2, "MOVE: REVERSE"); break;
+      d->mr->reverse(d->pwm1); d->ml->reverse(d->pwm2); 
 
     case D_LEFT:
-      d->mr->stop(); d->ml->forward(d->pwm2);        mvprintw(1,2, "MOVE: LEFT   "); break;
+      d->mr->stop(); d->ml->forward(d->pwm2);        
 
     case D_HLEFT:
-       d->mr->reverse(d->pwm1); d->ml->forward(d->pwm2); mvprintw(1,2, "MOVE: H_LEFT "); break;
+       d->mr->reverse(d->pwm1); d->ml->forward(d->pwm2); 
 
     case D_RIGHT:
-      d->mr->forward(d->pwm1); d->ml->stop();        mvprintw(1,2, "MOVE: RIGHT  "); break;
+      d->mr->forward(d->pwm1); d->ml->stop();        
 
     case D_HRIGHT:
-      d->mr->forward(d->pwm1); d->ml->reverse(d->pwm2); mvprintw(1,2, "MOVE: H_RIGHT"); break;
+      d->mr->forward(d->pwm1); d->ml->reverse(d->pwm2); 
   }
 
   d->micros_next_move = micros() + (d->msContinuous * 1000);
@@ -87,7 +88,7 @@ Based on the distance:
  
    The random left or right is a fuzzy component that should help getting the robot out of tight spots
 */
-void moveRobot(driveMotors *d, RangeSensor *rs) {
+void moveRobot(driveMotors *d, RangeSensor *rs, Mat mat) {
   float range;
 
   if (micros() < micros_next_measure) 
@@ -97,13 +98,20 @@ void moveRobot(driveMotors *d, RangeSensor *rs) {
   if (range == -1)
     return;
 
-  mvprintw(2,2, "RANGE: %.2f cm    ", range);
+  stringstream file;
+  stringstream s;
+  file << iteration << ".jpg";
+  
+
   //The random factors make this fuzzy (non intelligent but still less likely to get stuck
   if ( range > 30){
      d->direction = D_FORWARD;
      d->pwm1 = d->pwm2 = CRUISE_SPEED;
      d->msContinuous = 0;
      drive(d);
+     stringstream s;
+     s  << "./1/" << file.str();
+     cv::imwrite(s.str(), mat);
   }
   else if(range <30 && range >15) {
      if (rand()%2 == 0){ 
@@ -118,17 +126,20 @@ void moveRobot(driveMotors *d, RangeSensor *rs) {
        d->direction = D_HRIGHT;
        drive(d);
      }
+     s << "./2/" << file.str();
+     cv::imwrite(s.str(), mat);
   }  
   else{
     d->direction = D_REVERSE;
     d->pwm1 = d->pwm2 = CRUISE_SPEED;
     d->msContinuous = rand()%(1200-600 + 1) + 600;
     drive(d);
+    s << "./3/" << file.str();
+    cv::imwrite(s.str(), mat);
   }
 
   micros_next_measure = micros() + (100*1000);
   iteration ++;
-  mvprintw(3, 2, "ITERATION: %d",iteration);
 
   //do something completely arbitrary ever 1000th iteration
   if (iteration % 100 == 0){
@@ -137,25 +148,31 @@ void moveRobot(driveMotors *d, RangeSensor *rs) {
     d->direction = nd;
     d->pwm1 = d->pwm2 = CRUISE_SPEED;
     d->msContinuous = rand()%(1200-800 + 1) + 800;
-    mvprintw(4, 2, "LAST FUZZY MOVE: %d", nd);
     drive(d);
   }
+
+  stringstream srange;
+  srange << std::fixed << std::setprecision(2) << range << " cm";
+  putText(mat, srange.str().c_str(), Point2f(10,10), FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255,255));
+  imshow("Camera", mat);
 }
 
 int main(){
      VideoCapture cap;
-    // open the default camera, use something different from 0 otherwise;
-    // Check VideoCapture documentation.
 
-    if(!cap.open(0))
-        return 0;
+     int deviceID = 0;             // 0 = open default camera
+     int apiID = cv::CAP_ANY;      // 0 = autodetect default API
+     // open selected camera using selected API
+     cap.open(deviceID + apiID);
+     cap.set(CAP_PROP_FRAME_WIDTH, 640/2);
+     cap.set(CAP_PROP_FRAME_HEIGHT, 480/2);
+     // check if we succeeded
+     if (!cap.isOpened()) {
+        std::cerr << "ERROR! Unable to open camera\n";
+        return -1;
+     }
 
      iteration = 0;
-     //Set stdin to non-blocking, no echo to read keyboard 
-     initscr();
-     nodelay(stdscr, true);
-     noecho();
-     raw();
 
      srand(time(0)); //I tried NULL as well
      wiringPiSetup(); //We use the wiringPi GPIO method (read their documentation)
@@ -176,39 +193,34 @@ int main(){
      d->msContinuous = 0;
      d->micros_next_move = 0;
 
-     mvprintw(0, 40, "ROBOT v0.1");
+     Mat frame, prframe;
      while(1) {
 
-      Mat frame;
-      cap >> frame;
+      cap.read(frame);
       if( frame.empty() ) break; // end of video stream
-        imshow("this is you, smile! :)", frame);
-
-       //stop robot when q is pressedÂ
-       key = getch();
-       if ( key == 'q' ) break;
-
-       //move the robot use cruise speed as a hard default, just in case
-       d->pwm1=d->pwm2=CRUISE_SPEED; //cruise speed is a bit lower than the 100% duty cycle
-       moveRobot(d, rs); //perform the basic measure and move actions
-
-       delay(5); //safe CPU cycles, because measuring and moving isn't all that fast anyways
-     }
-
-     //Restore stdin to its normal blocking operation before we leave.
-     endwin();
-
-     //stop the motors
-     d->direction = D_STOP;
-     d->msContinuous = 0;
-     d->pwm1 = d->pwm2 = 0;
-     drive(d);
-  
-     //destruct objects
-     delete rs;
-     delete mr;
-     delete ml;
-     free(d);
+      flip(frame, prframe, 0);
      
-     return 0;
+      if (waitKey(5) >= 0)
+        break;
+
+      //move the robot use cruise speed as a hard default, just in case
+      d->pwm1=d->pwm2=CRUISE_SPEED; //cruise speed is a bit lower than the 100% duty cycle
+      moveRobot(d, rs, prframe); //perform the basic measure and move actions
+
+      delay(5); //safe CPU cycles, because measuring and moving isn't all that fast anyways
+    }
+
+    //stop the motors
+    d->direction = D_STOP;
+    d->msContinuous = 0;
+    d->pwm1 = d->pwm2 = 0;
+    drive(d);
+ 
+    //destruct objects
+    delete rs;
+    delete mr;
+    delete ml;
+    free(d);
+     
+    return 0;
 }
