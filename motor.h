@@ -16,8 +16,8 @@
  The WiringPi SoftPwm is used to lower the speed by using PWM.
 
  call methods:
- foreward(100); to run at full speed forwards
- reverse(100); to run at full speed backwards
+ foreward(4096); to run at full speed forwards
+ reverse(4096); to run at full speed backwards
 
  example:
  Motor m=new Motor(11, 12);

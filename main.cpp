@@ -17,7 +17,7 @@
 #define D_HRIGHT 4
 #define D_LEFT 5
 #define D_RIGHT 6
-#define CRUISE_SPEED 1000
+#define CRUISE_SPEED 4096
 int oldDir = 0;
 
 using namespace cv;
@@ -108,7 +108,8 @@ void drive(driveMotors *d){
 }
 
 void takePic(const char *path, driveMotors *d){
-  int t = d->direction;
+  return;
+  //int t = d->direction;
 
   //stop current motion so we have motion blur free images
   if (d->direction != oldDir){
@@ -156,7 +157,7 @@ void moveRobot(driveMotors *d, RangeSensor *rs, Mat mat) {
   
 
   //The random factors make this fuzzy (non intelligent but still less likely to get stuck
-  if ( range > 30){
+  if ( range > 20){
      s  << "./1/" << file.str();
      takePic(s.str().c_str(), d);
 
@@ -165,19 +166,19 @@ void moveRobot(driveMotors *d, RangeSensor *rs, Mat mat) {
      d->msContinuous = 0;
      drive(d);
   }
-  else if(range <30 && range >10) {
+  else if(range <20 && range >10) {
      s << "./2/" << file.str();
      takePic(s.str().c_str(), d);
 
      if (rand()%2 == 0){ 
-       d->pwm1 = d->pwm2 = 80;
-       d->msContinuous = rand()%(1200-200 + 1) + 600;
+       d->pwm1 = d->pwm2 = CRUISE_SPEED / 1.2;
+       d->msContinuous = rand()%(600-300 + 1) + 600;
        d->direction = D_HLEFT;
        drive(d);
      }
      else {
-       d->pwm1 = d->pwm2 = 80;
-       d->msContinuous = rand()%(1200-200 + 1) + 600;
+       d->pwm1 = d->pwm2 =  CRUISE_SPEED / 1.2;
+       d->msContinuous = rand()%(600-300 + 1) + 600;
        d->direction = D_HRIGHT;
        drive(d);
      }
@@ -187,7 +188,7 @@ void moveRobot(driveMotors *d, RangeSensor *rs, Mat mat) {
     takePic(s.str().c_str(), d);
 
     d->direction = D_REVERSE;
-    d->pwm1 = d->pwm2 = CRUISE_SPEED;
+    d->pwm1 = d->pwm2 = CRUISE_SPEED/1.2;
     d->msContinuous = rand()%(1200-600 + 1) + 600;
     drive(d);
   }
@@ -238,9 +239,9 @@ int main(){
      srand(time(0)); //I tried NULL as well
      wiringPiSetup(); //We use the wiringPi GPIO method (read their documentation)
 
-     Motor *ml=new Motor(9, 8); //left motor is connected to WiringPi-GPIO 9 and 8
+     Motor *ml=new Motor(23, 27); //left motor is connected to WiringPi-GPIO 13 and 16
 
-     Motor *mr=new Motor(16, 15); //right motor is connected to WiringPi-GPIO 16 and 15
+     Motor *mr=new Motor(24, 28); //right motor is connected to WiringPi-GPIO 19 and 20
 
      RangeSensor *rs = new RangeSensor(7, 0); //range finder trigeer is connected to WiringPI-GPIO 7 and echo to 0
      
@@ -276,7 +277,7 @@ int main(){
     d->msContinuous = 0;
     d->pwm1 = d->pwm2 = 0;
     drive(d);
- 
+
     //destruct objects
     delete rs;
     delete mr;
