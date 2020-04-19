@@ -4,6 +4,7 @@
 #include <wiringPi.h>
 #include "motor.h"
 #include "rangesensor.h"
+#include "hmc5883l.h"
 #include <iostream>
 #include <iomanip>
 #include <string.h> 
@@ -141,7 +142,7 @@ Based on the distance:
  
    The random left or right is a fuzzy component that should help getting the robot out of tight spots
 */
-void moveRobot(driveMotors *d, RangeSensor *rs, Mat mat) {
+void moveRobot(driveMotors *d, float c, RangeSensor *rs, Mat mat) {
   float range;
 
   if (micros() < micros_next_measure) 
@@ -172,13 +173,13 @@ void moveRobot(driveMotors *d, RangeSensor *rs, Mat mat) {
 
      if (rand()%2 == 0){ 
        d->pwm1 = d->pwm2 = CRUISE_SPEED / 1.2;
-       d->msContinuous = rand()%(600-300 + 1) + 600;
+       d->msContinuous = rand()%(300-100 + 1) + 100;
        d->direction = D_HLEFT;
        drive(d);
      }
      else {
        d->pwm1 = d->pwm2 =  CRUISE_SPEED / 1.2;
-       d->msContinuous = rand()%(600-300 + 1) + 600;
+       d->msContinuous = rand()%(300-100 + 1) + 100;
        d->direction = D_HRIGHT;
        drive(d);
      }
@@ -206,15 +207,56 @@ void moveRobot(driveMotors *d, RangeSensor *rs, Mat mat) {
     drive(d);
   }
 
-  stringstream srange;
+  stringstream srange, heading;
   srange << std::fixed << std::setprecision(2) << range << " cm";
+  heading << std::fixed << std::setprecision(2) << c << " degrees";
   putText(mat, srange.str().c_str(), Point2f(10,10), FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255,255));
+  putText(mat, heading.str().c_str(), Point2f(10,25), FONT_HERSHEY_PLAIN, 1,  Scalar(0,0,255,255));
   imshow("Camera", mat);
 }
 void createDir(){
   if ( dirExists("./1/") == 0 ) mkdir ("./1", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   if ( dirExists("./2/") == 0 ) mkdir ("./2", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   if ( dirExists("./3/") == 0 ) mkdir ("./3", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+}
+
+void demo(driveMotors *d){
+
+  std::cout << "FORWARD\r\n";
+  d->direction = D_FORWARD;
+  d->msContinuous = 2000;
+  d->pwm1 = d->pwm2 = 4096;
+  drive(d);
+  delay(2000);
+     
+  std::cout << "LEFT\r\n";
+  d->direction = D_LEFT;
+  drive(d);
+  delay(2000);
+
+  std::cout << "H_LEFT\r\n";
+  d->direction = D_HLEFT;
+  drive(d);
+  delay(2000);
+
+  std::cout << "RIGHT\r\n";
+  d->direction = D_RIGHT;
+  drive(d);
+  delay(2000);
+ 
+  std::cout << "HRIGHT\r\n";
+  d->direction = D_HRIGHT;
+  drive(d);
+  delay(2000);
+
+  std::cout << "REVERSE\r\n";
+  d->direction = D_REVERSE;
+  drive(d);
+  delay(2000);
+
+  std::cout << "STOP\r\n";
+  d->direction = D_STOP;
+  drive(d);
 }
 
 int main(){
@@ -237,6 +279,7 @@ int main(){
      iteration = 0;
 
      srand(time(0)); //I tried NULL as well
+
      wiringPiSetup(); //We use the wiringPi GPIO method (read their documentation)
 
      Motor *ml=new Motor(23, 27); //left motor is connected to WiringPi-GPIO 13 and 16
@@ -244,18 +287,33 @@ int main(){
      Motor *mr=new Motor(24, 28); //right motor is connected to WiringPi-GPIO 19 and 20
 
      RangeSensor *rs = new RangeSensor(7, 0); //range finder trigeer is connected to WiringPI-GPIO 7 and echo to 0
+ 
+     HMC5883L *comp = new HMC5883L(0x1e);
      
      int key; //key holds the ASCII number of the chracter pressed on the keyboard
 
      driveMotors *d=new driveMotors;
      d->mr=mr;
      d->ml=ml;
-     d->pwm1=d->pwm2=CRUISE_SPEED;
+     d->pwm1 = d->pwm2 = CRUISE_SPEED;
+     d->micros_next_move = 0;
      d->direction = D_FORWARD;
      d->msContinuous = 0;
+
+     demo(d);
+
+     hmc5883 *c=new hmc5883;
+
      d->micros_next_move = 0;
+     d->direction = D_HRIGHT;
+     d->msContinuous = 10000;
+     drive(d);
+     comp->calibrate(c);
+
+     float heading = 0;
 
      Mat frame, prframe;
+
      while(1) {
 
       cap.read(frame);
@@ -265,9 +323,11 @@ int main(){
       if (waitKey(5) >= 0)
         break;
 
+      heading = comp->heading(c,0.019);
+
       //move the robot use cruise speed as a hard default, just in case
       d->pwm1=d->pwm2=CRUISE_SPEED; //cruise speed is a bit lower than the 100% duty cycle
-      moveRobot(d, rs, prframe); //perform the basic measure and move actions
+      moveRobot(d, heading, rs, prframe); //perform the basic measure and move actions
 
       delay(5); //safe CPU cycles, because measuring and moving isn't all that fast anyways
     }
@@ -279,7 +339,7 @@ int main(){
     drive(d);
 
     //destruct objects
-    delete rs;
+    delete comp;
     delete mr;
     delete ml;
     free(d);

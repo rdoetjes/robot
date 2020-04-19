@@ -36,6 +36,46 @@ void HMC5883L::measure(hmc5883 *s){
   s->angle = angle;
 }
 
+float HMC5883L::heading(hmc5883 *s, float declinationAngle){
+  this->measure(s);
+
+  float heading = atan2((s->y - ((this->yMax + this->yMin) / 2.0)), (s->x - ((this->xMax + this->xMin) / 2.0)));
+  heading += declinationAngle;
+
+  // Correct for when signs are reversed.
+  if (heading < 0) {
+    heading += 2*PI;
+  }
+
+  // Check for wrap due to addition of declination.
+  if (heading > 2*PI) {
+    heading -= 2*PI;
+  }
+
+  return heading * 180/M_PI; // Convert radians to degrees.
+}
+
+void HMC5883L::calibrate(hmc5883 *s){
+  std::cout << "slowy turn sensor 360 degrees several times\r\n";
+
+  this->xMax = -10000;
+  this->yMax = -10000;
+  this->xMin = 10000;
+  this->yMin = 10000;
+
+  for (int i=0; i<100; i++) {
+    this->measure(s);
+    std::cout << s->x << " " << s->y << "\r\n";
+    this->xMax = std::max(this->xMax, s->x);
+    this->yMax = std::max(this->yMax, s->y);
+    this->xMin = std::min(this->xMin, s->x);
+    this->yMin = std::min(this->yMin, s->y);
+
+    delay(100);
+  }
+  std::cout << this->xMax << " " << this->xMin << " " << this->yMax << " " << this->yMin << "\r\n";
+}
+
 HMC5883L::~HMC5883L(){
   //wiringPiI2CClose(this->fd);
 }

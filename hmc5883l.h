@@ -11,6 +11,8 @@
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
 #include <cstdio>
+#include <iostream>
+#include <algorithm>
 
 #define PI 3.14159265
 #define HCM5883L_REG_CONFIG_A (0x00)
@@ -42,10 +44,12 @@ class HMC5883L {
     void measure(struct hmc5883 *s);
     virtual ~HMC5883L();
     void checkRC(int rc, const char *text);
-
+    void calibrate(hmc5883 *s);
+    float heading(hmc5883 *s, float declinationAngle);
   private:
     int devId;
     int fd;
+    float xMax, yMax, xMin, yMin = 0.0;
 
 };
 
