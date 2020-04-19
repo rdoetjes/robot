@@ -87,22 +87,28 @@ void drive(driveMotors *d){
       d->mr->stop(); d->ml->stop(); break;
 
     case D_FORWARD:
+      d->pwm1 = 512;
+      d->pwm2 = 512;
       d->mr->reverse(d->pwm1); d->ml->forward(d->pwm2); break;
 
     case D_REVERSE:
+      d->pwm1 = d->pwm2 = 512;
       d->mr->forward(d->pwm1); d->ml->reverse(d->pwm1); break;
 
     case D_HLEFT:
-      d->pwm1 = 0; d->pwm2 = 1022;
+      d->pwm1 = d->pwm2 = 512;
       d->mr->forward(d->pwm1); d->ml->forward(d->pwm1); break;       
 
     case D_RIGHT:
-      d->mr->reverse(1); d->ml->forward(0); break;       
+      d->pwm1 = 1; d->pwm2 = 0;
+      d->mr->reverse(d->pwm1); d->ml->forward(d->pwm2); break;       
 
     case D_LEFT:
-       d->mr->reverse(0); d->ml->forward(1022); break;
+      d->pwm1 = 0; d->pwm2 = 1022;
+      d->mr->reverse(d->pwm1); d->ml->forward(d->pwm2); break;
 
     case D_HRIGHT:
+      d->pwm1 = d->pwm2 = 127;
       d->mr->reverse(d->pwm1); d->ml->reverse(d->pwm1); break;
   }
 
@@ -258,7 +264,7 @@ void demo(driveMotors *d){
   delay(2000);
  
   std::cout << "HRIGHT\r\n";
-  d->pwm1 = d->pwm2 = 100;
+  d->pwm1 = d->pwm2 = 127;
   d->direction = D_HRIGHT;
   drive(d);
   delay(2000);
@@ -304,23 +310,23 @@ int main(){
      driveMotors *d=new driveMotors;
      d->mr=mr;
      d->ml=ml;
-     d->pwm1 = d->pwm2 = CRUISE_SPEED;
      d->micros_next_move = 0;
      d->direction = D_FORWARD;
      d->msContinuous = 0;
 
-     demo(d);
-     return 0;
+     //demo(d);
 
      hmc5883 *c=new hmc5883;
 
      d->micros_next_move = 0;
      d->direction = D_HRIGHT;
      d->msContinuous = 10000;
-     //drive(d);
-     //comp->calibrate(c);
+     drive(d);
+     comp->calibrate(c);
+     delay(10000);
 
      float heading = 0;
+     d->micros_next_move = 0;
 
      Mat frame, prframe;
 

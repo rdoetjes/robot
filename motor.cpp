@@ -53,5 +53,10 @@ void Motor::stop(){
 
 Motor::~Motor(){
   this->stop();
+  pinMode(p1, OUTPUT);
+  pinMode(p2, OUTPUT);
+  digitalWrite(p1, LOW);
+  digitalWrite(p2, LOW);
+
   p1=p2=-1;
 }
