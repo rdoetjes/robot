@@ -31,23 +31,23 @@
 Motor::Motor(int p1, int p2){
   this->p1 = p1;
   this->p2 = p2;
-  pinMode(p1, OUTPUT);
+  pwmSetMode(PWM_MODE_BAL);
+  pinMode(p1, PWM_OUTPUT);
   pinMode(p2, OUTPUT);
 }
 
 void Motor::forward(int pwm){
-   digitalWrite(p1, HIGH);
+   pwmWrite(p1, pwm);
    digitalWrite(p2, LOW);
 }
 
 void Motor::reverse(int pwm){
-   pwm=0;
-   digitalWrite(p1, LOW);
+   pwmWrite(p1, pwm);
    digitalWrite(p2, HIGH);
 }
 
 void Motor::stop(){
-   digitalWrite(p1, LOW);
+   pwmWrite(p1, 0);
    digitalWrite(p2, LOW);
 }
 

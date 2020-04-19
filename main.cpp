@@ -18,7 +18,7 @@
 #define D_HRIGHT 4
 #define D_LEFT 5
 #define D_RIGHT 6
-#define CRUISE_SPEED 4096
+#define CRUISE_SPEED 512
 int oldDir = 0;
 
 using namespace cv;
@@ -87,22 +87,23 @@ void drive(driveMotors *d){
       d->mr->stop(); d->ml->stop(); break;
 
     case D_FORWARD:
-      d->mr->forward(d->pwm1); d->ml->forward(d->pwm2); break;
+      d->mr->reverse(d->pwm1); d->ml->forward(d->pwm2); break;
 
     case D_REVERSE:
-      d->mr->reverse(d->pwm1); d->ml->reverse(d->pwm2); break;
-
-    case D_LEFT:
-      d->mr->stop(); d->ml->forward(d->pwm2); break;       
+      d->mr->forward(d->pwm1); d->ml->reverse(d->pwm1); break;
 
     case D_HLEFT:
-       d->mr->reverse(d->pwm1); d->ml->forward(d->pwm2); break;
+      d->pwm1 = 0; d->pwm2 = 1022;
+      d->mr->forward(d->pwm1); d->ml->forward(d->pwm1); break;       
 
     case D_RIGHT:
-      d->mr->forward(d->pwm1); d->ml->stop(); break;       
+      d->mr->reverse(1); d->ml->forward(0); break;       
+
+    case D_LEFT:
+       d->mr->reverse(0); d->ml->forward(1022); break;
 
     case D_HRIGHT:
-      d->mr->forward(d->pwm1); d->ml->reverse(d->pwm2); break;
+      d->mr->reverse(d->pwm1); d->ml->reverse(d->pwm1); break;
   }
 
   d->micros_next_move = micros() + (d->msContinuous * 1000);
@@ -172,13 +173,15 @@ void moveRobot(driveMotors *d, float c, RangeSensor *rs, Mat mat) {
      takePic(s.str().c_str(), d);
 
      if (rand()%2 == 0){ 
-       d->pwm1 = d->pwm2 = CRUISE_SPEED / 1.2;
+       d->pwm1 = CRUISE_SPEED;
+       d->pwm2 = CRUISE_SPEED / 1.2;
        d->msContinuous = rand()%(300-100 + 1) + 100;
        d->direction = D_HLEFT;
        drive(d);
      }
      else {
-       d->pwm1 = d->pwm2 =  CRUISE_SPEED / 1.2;
+       d->pwm1 =  CRUISE_SPEED / 1.2;
+       d->pwm2 =  CRUISE_SPEED;
        d->msContinuous = rand()%(300-100 + 1) + 100;
        d->direction = D_HRIGHT;
        drive(d);
@@ -221,36 +224,42 @@ void createDir(){
 }
 
 void demo(driveMotors *d){
-
   std::cout << "FORWARD\r\n";
   d->direction = D_FORWARD;
-  d->msContinuous = 2000;
-  d->pwm1 = d->pwm2 = 4096;
+  d->msContinuous = 0;
+  d->micros_next_move = 0;
+  d->pwm1 = 513;
+  d->pwm2 = 513;
+  drive(d);
+  delay(2000);
+
+  std::cout << "REVERSE\r\n";
+  d->pwm1 = d->pwm2 = 512;
+  d->direction = D_REVERSE;
   drive(d);
   delay(2000);
      
   std::cout << "LEFT\r\n";
   d->direction = D_LEFT;
+  d->pwm1 = 0; d->pwm2 = 1022;
   drive(d);
   delay(2000);
 
   std::cout << "H_LEFT\r\n";
+  d->pwm1 = d->pwm2 = 512;
   d->direction = D_HLEFT;
   drive(d);
   delay(2000);
 
   std::cout << "RIGHT\r\n";
+  d->pwm1 = d->pwm2 = 512;
   d->direction = D_RIGHT;
   drive(d);
   delay(2000);
  
   std::cout << "HRIGHT\r\n";
+  d->pwm1 = d->pwm2 = 100;
   d->direction = D_HRIGHT;
-  drive(d);
-  delay(2000);
-
-  std::cout << "REVERSE\r\n";
-  d->direction = D_REVERSE;
   drive(d);
   delay(2000);
 
@@ -301,14 +310,15 @@ int main(){
      d->msContinuous = 0;
 
      demo(d);
+     return 0;
 
      hmc5883 *c=new hmc5883;
 
      d->micros_next_move = 0;
      d->direction = D_HRIGHT;
      d->msContinuous = 10000;
-     drive(d);
-     comp->calibrate(c);
+     //drive(d);
+     //comp->calibrate(c);
 
      float heading = 0;
 
